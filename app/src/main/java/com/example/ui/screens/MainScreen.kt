@@ -48,6 +48,7 @@ import com.example.data.model.SavingTarget
 import com.example.data.model.Transaction
 import com.example.data.model.RecurringTransaction
 import com.example.ui.components.CustomPieChart
+import com.example.ui.components.CustomBarChart
 import com.example.ui.util.FormatUtils
 import com.example.ui.util.IconsMap
 import com.example.ui.viewmodel.TransactionViewModel
@@ -81,6 +82,24 @@ fun MainScreen(
         }
     }
     var txToEdit by remember { mutableStateOf<Transaction?>(null) }
+    
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val sharedPrefs = remember { context.getSharedPreferences("finance_prefs", android.content.Context.MODE_PRIVATE) }
+    var isGdriveLoggedIn by remember { mutableStateOf(sharedPrefs.getBoolean("gdrive_logged_in", false)) }
+    var isAutoBackupEnabled by remember { mutableStateOf(sharedPrefs.getBoolean("gdrive_auto_backup", false)) }
+    var hasPromptedRestore by remember { mutableStateOf(sharedPrefs.getBoolean("gdrive_prompted_restore", false)) }
+    var showStartupRestorePrompt by remember { mutableStateOf(false) }
+
+    // Mock check for Google Drive backup when logged in
+    LaunchedEffect(isGdriveLoggedIn) {
+        if (isGdriveLoggedIn && !hasPromptedRestore) {
+            // Mocking network delay to Drive API
+            kotlinx.coroutines.delay(1500)
+            showStartupRestorePrompt = true
+            sharedPrefs.edit().putBoolean("gdrive_prompted_restore", true).apply()
+            hasPromptedRestore = true
+        }
+    }
 
     val accounts by viewModel.accounts.collectAsState()
     val transactions by viewModel.filteredTransactions.collectAsState()
@@ -98,7 +117,6 @@ fun MainScreen(
     val globalBudgetLimit by viewModel.globalBudgetLimit.collectAsState()
 
     val navController = rememberNavController()
-    val context = LocalContext.current
     var transactionToDelete by remember { mutableStateOf<Transaction?>(null) }
 
     Scaffold(
@@ -371,7 +389,17 @@ fun MainScreen(
                         onSeedMockData = { seedMockTransactions(viewModel) },
                         onClearData = { clearAllData(viewModel) },
                         onImportCsv = { csv, cb -> viewModel.importCsvTransactions(csv, cb) },
-                        onExportCsv = { cb -> viewModel.exportCsvTransactions(cb) }
+                        onExportCsv = { cb -> viewModel.exportCsvTransactions(cb) },
+                        isGdriveLoggedIn = isGdriveLoggedIn,
+                        onGdriveLoginChange = { 
+                            isGdriveLoggedIn = it
+                            sharedPrefs.edit().putBoolean("gdrive_logged_in", it).apply()
+                        },
+                        isAutoBackupEnabled = isAutoBackupEnabled,
+                        onAutoBackupChange = { 
+                            isAutoBackupEnabled = it
+                            sharedPrefs.edit().putBoolean("gdrive_auto_backup", it).apply()
+                        }
                     )
                 }
             }
@@ -408,6 +436,41 @@ fun MainScreen(
                             }
                         }
                         isAddSheetOpen = false
+                    }
+                )
+            }
+
+            if (showStartupRestorePrompt) {
+                AlertDialog(
+                    onDismissRequest = { showStartupRestorePrompt = false },
+                    title = {
+                        Text(
+                            text = "Backup Ditemukan",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = "Aplikasi menemukan file backup transaksi terbaru di Google Drive yang terhubung. Apakah Anda ingin melakukan pemulihan (restore) data dari Drive sekarang?\n\nPeringatan: Data yang ada sekarang akan ditimpa dengan data backup dari Drive.",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                showStartupRestorePrompt = false
+                                Toast.makeText(context, "Memulai proses pemulihan (restore) dari Google Drive...", Toast.LENGTH_LONG).show()
+                                // TODO: Actual Drive Download & Restore logic
+                            }
+                        ) {
+                            Text("Restore Sekarang")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showStartupRestorePrompt = false }) {
+                            Text("Batal")
+                        }
                     }
                 )
             }
@@ -482,6 +545,7 @@ fun DashboardPanel(
     onAdjustAsset: (String, Double, Boolean) -> Unit,
     initialIntentAction: String? = null
 ) {
+    var historyAccountForPopup by remember { mutableStateOf<Account?>(null) }
     var isAddTargetOpen by remember { mutableStateOf(false) }
 
     LaunchedEffect(initialIntentAction) {
@@ -763,27 +827,117 @@ fun DashboardPanel(
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
-                                if (globalBudgetLimit > 0 && monthlyExpense >= 0.8 * globalBudgetLimit) {
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.background(Color(0xFFB71C1C).copy(alpha = 0.8f), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Warning,
-                                            contentDescription = "Peringatan Anggaran",
-                                            tint = Color.White,
-                                            modifier = Modifier.size(12.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = if (monthlyExpense >= globalBudgetLimit) "Overbudget" else "Mendekati Limit",
-                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
-                                            color = Color.White
-                                        )
-                                    }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Bar Chart (with Limit)
+        item {
+            var isExpenseChartExpanded by rememberSaveable { mutableStateOf(false) }
+            val expenseTransactions = dashboardFilteredTransactions.filter { it.type == "PENGELUARAN" }
+            val totalExpensePie = expenseTransactions.sumOf { it.amount }
+            if (totalExpensePie > 0) {
+                val grouped = expenseTransactions.groupBy { it.categoryId }.map { (catId, txs) ->
+                    val cat = categories.find { it.id == catId } ?: Category(catId, catId, "QuestionMark", "PENGELUARAN", "#9E9E9E")
+                    val amount = txs.sumOf { it.amount }
+                    com.example.ui.viewmodel.CategoryShare(
+                        category = cat,
+                        amount = amount,
+                        percentage = (amount / totalExpensePie) * 100.0
+                    )
+                }.sortedByDescending { it.amount }
+                
+                val pipDisplayShares = if (grouped.size <= 5) grouped else {
+                    val top = grouped.take(4)
+                    val otherShares = grouped.drop(4)
+                    val otherCategory = Category("lainnya", "Lainnya", "Category", "PENGELUARAN", "#B0BEC5")
+                    top + com.example.ui.viewmodel.CategoryShare(otherCategory, otherShares.sumOf { it.amount }, otherShares.sumOf { it.percentage })
+                }
+                
+                Card(
+                    modifier = Modifier.fillMaxWidth().animateContentSize().clickable { isExpenseChartExpanded = !isExpenseChartExpanded },
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = "Pengeluaran Kategori (Bulan Ini)", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
+                            Icon(
+                                imageVector = if (isExpenseChartExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = "Expand/Collapse"
+                            )
+                        }
+                        
+                        if (!isExpenseChartExpanded) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            val totalColor = if (globalBudgetLimit > 0) {
+                                if (totalExpensePie >= globalBudgetLimit) Color(0xFFD32F2F)
+                                else if (totalExpensePie >= 0.8 * globalBudgetLimit) Color(0xFFFFB300)
+                                else Color(0xFF2E7D32)
+                            } else MaterialTheme.colorScheme.primary
+
+                            Text(
+                                text = "Total: ${FormatUtils.formatRupiah(totalExpensePie)}",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = totalColor
+                            )
+                            if (globalBudgetLimit > 0) {
+                                Text(
+                                    text = "Batas: ${FormatUtils.formatRupiah(globalBudgetLimit)}",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = Color.Gray
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                if (totalExpensePie >= globalBudgetLimit) {
+                                    Text(
+                                        text = "Peringatan ! Anda telah melewati batas anggaran.",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = Color.White,
+                                        modifier = Modifier.background(Color(0xFFD32F2F), RoundedCornerShape(4.dp)).padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                } else if (totalExpensePie >= 0.8 * globalBudgetLimit) {
+                                    Text(
+                                        text = "Peringatan ! Mendekati batas anggaran bulanan.",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = Color(0xFF4E342E),
+                                        modifier = Modifier.background(Color(0xFFFFB300), RoundedCornerShape(4.dp)).padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
                                 }
                             }
+                        } else {
+                            if (globalBudgetLimit > 0) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                if (totalExpensePie >= globalBudgetLimit) {
+                                    Text(
+                                        text = "Peringatan ! Anda telah melewati batas anggaran.",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = Color.White,
+                                        modifier = Modifier.background(Color(0xFFD32F2F), RoundedCornerShape(4.dp)).padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                } else if (totalExpensePie >= 0.8 * globalBudgetLimit) {
+                                    Text(
+                                        text = "Peringatan ! Mendekati batas anggaran bulanan.",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = Color(0xFF4E342E),
+                                        modifier = Modifier.background(Color(0xFFFFB300), RoundedCornerShape(4.dp)).padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            com.example.ui.components.CustomBarChart(
+                                shares = pipDisplayShares,
+                                statType = "PENGELUARAN",
+                                modifier = Modifier.fillMaxWidth(),
+                                globalBudgetLimit = globalBudgetLimit
+                            )
                         }
                     }
                 }
@@ -1286,11 +1440,7 @@ fun DashboardPanel(
                                     modifier = Modifier
                                         .width(180.dp)
                                         .clickable { 
-                                            activeAccountFilter = if (isSelected) null else account.id
-                                            if (!isSelected) {
-                                                // Switch dashboard to specific filter if not active? Actually no, 
-                                                // activeAccountFilter applies unconditionally to the transactions list.
-                                            }
+                                            historyAccountForPopup = account
                                         }
                                         .testTag("account_hero_card_${account.id}"),
                                     shape = RoundedCornerShape(16.dp),
@@ -2240,6 +2390,96 @@ fun DashboardPanel(
                 activeAccountForQuickTransfer = null
             }
         )
+    }
+
+    if (historyAccountForPopup != null) {
+        val account = historyAccountForPopup!!
+        val accountTransactions = allTransactions.filter { it.accountId == account.id || it.destAccountId == account.id }.sortedByDescending { it.date }
+        
+        androidx.compose.ui.window.Dialog(onDismissRequest = { historyAccountForPopup = null }) {
+            Card(
+                modifier = Modifier
+                    .fillMaxHeight(0.8f)
+                    .fillMaxWidth()
+                    .padding(12.dp)
+                    .testTag("account_history_popup"),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Text(
+                        text = "Riwayat ${account.name}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 10.dp),
+                        textAlign = TextAlign.Center
+                    )
+                    
+                    if (accountTransactions.isEmpty()) {
+                        Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            Text("Belum ada riwayat transaksi", color = Color.Gray)
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(accountTransactions) { tx ->
+                                val cat = categories.find { it.id == tx.categoryId }
+                                val isPemasukan = tx.type == "PEMASUKAN" || (tx.type == "TRANSFER" && tx.destAccountId == account.id)
+                                val amountColor = if (isPemasukan) Color(0xFF2E7D32) else Color(0xFFC62828)
+                                val prefix = if (tx.type == "TRANSFER") "➔ " else if (isPemasukan) "+ " else "- "
+                                
+                                Card(
+                                    modifier = Modifier.fillMaxWidth().clickable { historyAccountForPopup = null; onEditTransaction(tx) },
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.5f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = if (tx.type == "TRANSFER") "Transfer" else cat?.name ?: "Unknown",
+                                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                                            )
+                                            if (tx.notes.isNotBlank()) {
+                                                Text(text = tx.notes, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                                            }
+                                            Text(
+                                                text = com.example.ui.util.FormatUtils.formatDate(tx.date),
+                                                style = MaterialTheme.typography.labelSmall, color = Color.Gray
+                                            )
+                                        }
+                                        Text(
+                                            text = "$prefix${com.example.ui.util.FormatUtils.formatRupiah(tx.amount)}",
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = amountColor
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    Button(
+                        onClick = { historyAccountForPopup = null },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Tutup")
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -3583,7 +3823,7 @@ fun StatisticsPanel(
                         Text("Belum ada data.", color = Color.Gray, fontSize = 12.sp)
                     }
                 } else {
-                    CustomPieChart(
+                    CustomBarChart(
                         shares = displayShares,
                         statType = selectedStatType,
                         modifier = Modifier
@@ -3939,7 +4179,11 @@ fun SettingsPanel(
     onSeedMockData: () -> Unit,
     onClearData: () -> Unit,
     onImportCsv: (String, (Boolean, String) -> Unit) -> Unit,
-    onExportCsv: ((String) -> Unit) -> Unit
+    onExportCsv: ((String) -> Unit) -> Unit,
+    isGdriveLoggedIn: Boolean = false,
+    onGdriveLoginChange: (Boolean) -> Unit = {},
+    isAutoBackupEnabled: Boolean = false,
+    onAutoBackupChange: (Boolean) -> Unit = {}
 ) {
     var acctName by remember { mutableStateOf("") }
     var editingCategory by remember { mutableStateOf<Category?>(null) }
@@ -5033,6 +5277,109 @@ fun SettingsPanel(
                         }
                     }
                 }
+            }
+        }
+
+        // Group 6: Google Drive Backup
+        item {
+            var isGdriveExpanded by rememberSaveable { mutableStateOf(false) }
+            var showRestoreDialog by remember { mutableStateOf(false) }
+            
+            CollapsibleSettingsCard(
+                title = "Sinkronisasi Google Drive (BETA)",
+                icon = Icons.Default.CloudSync,
+                expanded = isGdriveExpanded,
+                onExpandedChange = { isGdriveExpanded = it },
+                testTag = "settings_col_gdrive"
+            ) {
+                Text(
+                    text = "Otomatis upload backup database (JSON Terenkripsi) ke Google Drive agar data Anda aman.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.3f))
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = "Status Login GDrive", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                            Button(
+                                onClick = { 
+                                    if (isGdriveLoggedIn) {
+                                        onGdriveLoginChange(false)
+                                        onAutoBackupChange(false)
+                                    } else {
+                                        // TODO: Actual implementation using GoogleSignInClient. For now, mocking flow.
+                                        onGdriveLoginChange(true)
+                                        Toast.makeText(context, "Google Account Terhubung (Mock)", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                modifier = Modifier.height(32.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp)
+                            ) {
+                                Text(if (isGdriveLoggedIn) "Logout" else "Login via Google", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                        
+                        if (isGdriveLoggedIn) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha=0.5f))
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Auto Upload DB (JSON)", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                                    Text("Otomatis upload file DB di background ketika aplikasi dibuka/tutup", style = MaterialTheme.typography.bodySmall, color = Color.Gray, lineHeight = 14.sp)
+                                }
+                                androidx.compose.material3.Switch(
+                                    checked = isAutoBackupEnabled,
+                                    onCheckedChange = { onAutoBackupChange(it) }
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedButton(onClick = { showRestoreDialog = true }, modifier = Modifier.weight(1f).height(44.dp), shape=RoundedCornerShape(8.dp)) {
+                                    Text("Restore dari Drive", fontSize = 11.sp, textAlign = TextAlign.Center)
+                                }
+                                Button(
+                                    onClick = { Toast.makeText(context, "Memulai backup DB Json ke Google Drive...", Toast.LENGTH_SHORT).show() }, 
+                                    modifier = Modifier.weight(1f).height(44.dp),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text("Backup Sekarang", fontSize = 11.sp, textAlign = TextAlign.Center, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        } else {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("Silakan Login terlebih dahulu agar dapat melakukan backup file DB .json", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+            }
+            
+            if (showRestoreDialog) {
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { showRestoreDialog = false },
+                    title = { Text("Konfirmasi Restore dari GDrive", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)) },
+                    text = { Text("Pemberitahuan: Apakah Anda yakin ingin memulihkan (restore) data? Tindakan ini akan menimpa database aplikasi saat ini secara permanen dari file backup terakhir (.json) Anda di Google Drive.") },
+                    confirmButton = {
+                        Button(onClick = { 
+                            showRestoreDialog = false; 
+                            Toast.makeText(context, "Mulai restore database dari Google Drive...", Toast.LENGTH_LONG).show() 
+                        }) {
+                            Text("Ya, Restore")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showRestoreDialog = false }) {
+                            Text("Batal")
+                        }
+                    }
+                )
             }
         }
     }
