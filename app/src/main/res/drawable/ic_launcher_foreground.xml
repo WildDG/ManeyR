@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 1. Whimsical Wave Cat Tail (Left Side) -->
+    <path
+        android:pathData="M 23,65 C 13,67 11,54 16,49 C 20,44 24,49 21,56"
+        android:strokeColor="#FFF5EB"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M 23,65 C 13,67 11,54 16,49 C 20,44 24,49 21,56"
+        android:strokeColor="#FFA7D1"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+
+    <!-- 2. Adorable Stubby Feet / Legs at the bottom -->
+    <!-- Left Leg/Paw background shadow -->
+    <path
+        android:pathData="M 32,74 C 32,81 42,81 42,74 Z"
+        android:fillColor="#FFE1D4" />
+    <!-- Left Leg/Paw -->
+    <path
+        android:pathData="M 33,73 C 33,80 41,80 41,73 Z"
+        android:fillColor="#FFF5EB" />
+    <!-- Left Paw Pink Pad -->
+    <path
+        android:pathData="M 37,76 L 37,78"
+        android:strokeColor="#FF8CA3"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round" />
+
+    <!-- Right Leg/Paw background shadow -->
+    <path
+        android:pathData="M 66,74 C 66,81 76,81 76,74 Z"
+        android:fillColor="#FFE1D4" />
+    <!-- Right Leg/Paw -->
+    <path
+        android:pathData="M 67,73 C 67,80 75,80 75,73 Z"
+        android:fillColor="#FFF5EB" />
+    <!-- Right Paw Pink Pad -->
+    <path
+        android:pathData="M 71,76 L 71,78"
+        android:strokeColor="#FF8CA3"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round" />
+
+    <!-- 3. Pointy, Super Fluffy Cat Ears -->
+    <!-- Left Ear Outer -->
+    <path
+        android:pathData="M 26,44 L 20,22 C 19.5,19 24.5,18.5 29,21.5 L 43,35 Z"
+        android:fillColor="#FFF5EB" />
+    <!-- Left Ear Inner Pink -->
+    <path
+        android:pathData="M 26,39 L 23,26 C 22.8,24.5 25,24.2 27,25.5 L 35,33 Z"
+        android:fillColor="#FF8CA3" />
+
+    <!-- Right Ear Outer -->
+    <path
+        android:pathData="M 82,44 L 88,22 C 88.5,19 83.5,18.5 79,21.5 L 65,35 Z"
+        android:fillColor="#FFF5EB" />
+    <!-- Right Ear Inner Pink -->
+    <path
+        android:pathData="M 82,39 L 85,26 C 85.2,24.5 83,24.2 81,25.5 L 73,33 Z"
+        android:fillColor="#FF8CA3" />
+
+    <!-- 4. Main Chubby Round Cat Head / Body -->
+    <path
+        android:pathData="M 22,56 C 22,34 86,34 86,56 C 86,75 22,75 22,56 Z"
+        android:fillColor="#FFF5EB" />
+
+    <!-- 5. Fluffy Cheek Fluff Details -->
+    <path
+        android:pathData="M 22,56 L 18,58 L 22,60 Z"
+        android:fillColor="#FFF5EB" />
+    <path
+        android:pathData="M 86,56 L 90,58 L 86,60 Z"
+        android:fillColor="#FFF5EB" />
+
+    <!-- 6. Playful Moe Whiskers -->
+    <!-- Left Whiskers -->
+    <path
+        android:pathData="M 22,55 L 14,54"
+        android:strokeColor="#2D1500"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M 22,59 L 15,60"
+        android:strokeColor="#2D1500"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round" />
+    <!-- Right Whiskers -->
+    <path
+        android:pathData="M 86,55 L 94,54"
+        android:strokeColor="#2D1500"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M 86,59 L 93,60"
+        android:strokeColor="#2D1500"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round" />
+
+    <!-- 7. Soft Blush Cheeks -->
+    <!-- Left Blush -->
+    <path
+        android:pathData="M 26,56 A 4.5,3.5 0 1,1 35,56 A 4.5,3.5 0 1,1 26,56 Z"
+        android:fillColor="#FFC2CD" />
+    <!-- Right Blush -->
+    <path
+        android:pathData="M 73,56 A 4.5,3.5 0 1,1 82,56 A 4.5,3.5 0 1,1 73,56 Z"
+        android:fillColor="#FFC2CD" />
+
+    <!-- 8. Large, Sparkling Anime Moe Eyes -->
+    <!-- Left Eye Base -->
+    <path
+        android:pathData="M 33,51 A 4,5 0 1,1 41,51 A 4,5 0 1,1 33,51 Z"
+        android:fillColor="#2D1500" />
+    <!-- Left Eye Large Highlight -->
+    <path
+        android:pathData="M 34.5,48.5 A 1.5,1.8 0 1,1 37.5,48.5 A 1.5,1.8 0 1,1 34.5,48.5 Z"
+        android:fillColor="#FFFFFF" />
+    <!-- Left Eye Small Highlight -->
+    <path
+        android:pathData="M 38.5,52 A 0.8,0.9 0 1,1 40.1,52 A 0.8,0.9 0 1,1 38.5,52 Z"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Right Eye Base -->
+    <path
+        android:pathData="M 67,51 A 4,5 0 1,1 75,51 A 4,5 0 1,1 67,51 Z"
+        android:fillColor="#2D1500" />
+    <!-- Right Eye Large Highlight -->
+    <path
+        android:pathData="M 68.5,48.5 A 1.5,1.8 0 1,1 71.5,48.5 A 1.5,1.8 0 1,1 68.5,48.5 Z"
+        android:fillColor="#FFFFFF" />
+    <!-- Right Eye Small Highlight -->
+    <path
+        android:pathData="M 72.5,52 A 0.8,0.9 0 1,1 74.1,52 A 0.8,0.9 0 1,1 72.5,52 Z"
+        android:fillColor="#FFFFFF" />
+
+    <!-- 9. Adorable Moe Mouth Snout (:3 mouth with mini pink tongue) -->
+    <!-- Pink Tongue background -->
+    <path
+        android:pathData="M 52.5,53.5 C 52.5,53.5 54,56.5 55.5,53.5 Z"
+        android:fillColor="#FF4081" />
+    <!-- Left mouth stroke -->
+    <path
+        android:pathData="M 54,52 C 53,53.8 51,53.8 51,52.3"
+        android:strokeColor="#2D1500"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <!-- Right mouth stroke -->
+    <path
+        android:pathData="M 54,52 C 55,53.8 57,53.8 57,52.3"
+        android:strokeColor="#2D1500"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <!-- Tiny Cute Nose -->
+    <path
+        android:pathData="M 53,50 L 55,50 L 54,51 Z"
+        android:fillColor="#FF8CA3" />
+
+    <!-- 10. Large Shiny Gold Coin Held In Front of Tummy -->
+    <!-- Exterior gold coin shadow -->
+    <path
+        android:pathData="M 43,63 A 11,11 0 1,1 65,63 A 11,11 0 1,1 43,63 Z"
+        android:fillColor="#FFA000" />
+    <!-- Shiny central gold coin -->
+    <path
+        android:pathData="M 44,62 A 10,10 0 1,1 64,62 A 10,10 0 1,1 44,62 Z"
+        android:fillColor="#FFD54F" />
+    <!-- Inner coin ring -->
+    <path
+        android:pathData="M 47.5,62 A 6.5,6.5 0 1,1 60.5,62 A 6.5,6.5 0 1,1 47.5,62 Z"
+        android:strokeColor="#FF8F00"
+        android:strokeWidth="1"
+        android:fillColor="#00000000" />
+    <!-- Dollar sign in center -->
+    <path
+        android:pathData="M 54,58.5 V 65.5"
+        android:strokeColor="#E65100"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M 51.5,60 H 56.5"
+        android:strokeColor="#E65100"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M 51.5,64 H 56.5"
+        android:strokeColor="#E65100"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round" />
+
+    <!-- 11. Paw Arms holding the coin -->
+    <!-- Left Paw -->
+    <path
+        android:pathData="M 37,59 C 39,59 44,57 44,62 C 44,65 39,66 37,62 Z"
+        android:fillColor="#FFF5EB" />
+    <!-- Right Paw -->
+    <path
+        android:pathData="M 71,59 C 69,59 64,57 64,62 C 64,65 69,66 71,62 Z"
+        android:fillColor="#FFF5EB" />
+
+    <!-- 12. Floating Whimsical Heart & Sparkle on side -->
+    <!-- Sparkle Left -->
+    <path
+        android:pathData="M 18,34 L 20,31 L 18,28 L 16,31 Z"
+        android:fillColor="#FFD54F" />
+    <!-- Sparkle Right -->
+    <path
+        android:pathData="M 90,36 L 92,33 L 90,30 L 88,33 Z"
+        android:fillColor="#FFD54F" />
+    <!-- Mini Heart near ear -->
+    <path
+        android:pathData="M 76,14 C 75,12 73,12 73,14 C 73,16 76,18 76,18 C 76,18 79,16 79,14 C 79,12 77,12 76,14 Z"
+        android:fillColor="#FF4081" />
+
+</vector>
