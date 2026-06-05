@@ -39,6 +39,9 @@ Ingin mencoba menjalankan atau mengembangkan ManeyR di perangkat/emulator Anda? 
    ```bash
    git clone [https://github.com/WILDDG/ManeyR.git](https://github.com/WILDDG/ManeyR.git)
 Buka di Android StudioBuka Android Studio, pilih Open, dan arahkan ke folder proyek ManeyR yang baru saja Anda clone. 
-Biarkan Android Studio melakukan sinkronisasi Gradle dan memperbaiki inkompatibilitas awal (jika ada).Konfigurasi API KeyBuat sebuah file baru bernama .env di direktori root proyek.Masukkan Gemini API key Anda ke dalam file tersebut (Anda bisa merujuk pada file .env.example):Code snippetGEMINI_API_KEY=masukkan_api_key_anda_disini
-Penyesuaian Konfigurasi BuildBuka file build.gradle.kts pada level app.Cari dan hapus baris kode berikut agar aplikasi dapat dijalankan dengan lancar dalam mode debug lokal Anda:KotlinsigningConfig = signingConfigs.getByName("debugConfig")
+Biarkan Android Studio melakukan sinkronisasi Gradle dan memperbaiki inkompatibilitas awal (jika ada).
+Konfigurasi API KeyBuat sebuah file baru bernama .env di direktori root proyek.
+Masukkan Gemini API key Anda ke dalam file tersebut (Anda bisa merujuk pada file .env.example):Code snippetGEMINI_API_KEY=masukkan_api_key_anda_disini
+Penyesuaian Konfigurasi BuildBuka file build.gradle.kts pada level app.
+Cari dan hapus baris kode berikut agar aplikasi dapat dijalankan dengan lancar dalam mode debug lokal Anda:KotlinsigningConfig = signingConfigs.getByName("debugConfig")
 Jalankan AplikasiTekan tombol Run (Shift + F10) pada emulator Android atau perangkat fisik yang sudah terhubung
