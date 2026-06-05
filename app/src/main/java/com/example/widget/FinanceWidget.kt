@@ -65,49 +65,18 @@ class FinanceWidget : GlanceAppWidget() {
                             color = ColorProvider(Color(0xFF21005D))
                         )
                     )
-                    Spacer(modifier = GlanceModifier.height(12.dp))
+                    Spacer(modifier = GlanceModifier.height(14.dp))
                     
-                    if (savingTargets.isNotEmpty()) {
-                        val firstTarget = savingTargets.first()
-                        val progress = if (firstTarget.targetAmount > 0) (firstTarget.currentAmount / firstTarget.targetAmount) * 100 else 0.0
-                        Text(
-                            text = "Target: ${firstTarget.name}",
-                            style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        )
-                        Spacer(modifier = GlanceModifier.height(4.dp))
-                        Text(
-                            text = "${FormatUtils.formatRupiah(firstTarget.currentAmount)} / ${FormatUtils.formatRupiah(firstTarget.targetAmount)} (${progress.toInt()}%)",
-                            style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.Gray))
-                        )
-                        Spacer(modifier = GlanceModifier.height(12.dp))
-                    }
-                    
-                    Row(
-                        modifier = GlanceModifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Button(
-                            text = "+ Transaksi",
-                            onClick = actionStartActivity(
-                                Intent(context, MainActivity::class.java).apply {
-                                    action = "OPEN_ADD_TRANSACTION"
-                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                                }
-                            ),
-                            modifier = GlanceModifier.defaultWeight()
-                        )
-                        Spacer(modifier = GlanceModifier.width(8.dp))
-                        Button(
-                            text = "+ Target",
-                            onClick = actionStartActivity(
-                                Intent(context, MainActivity::class.java).apply {
-                                    action = "OPEN_ADD_TARGET"
-                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                                }
-                            ),
-                            modifier = GlanceModifier.defaultWeight()
-                        )
-                    }
+                    Button(
+                        text = "+ Transaksi",
+                        onClick = actionStartActivity(
+                            Intent(context, MainActivity::class.java).apply {
+                                action = "OPEN_ADD_TRANSACTION"
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            }
+                        ),
+                        modifier = GlanceModifier.fillMaxWidth()
+                    )
                 }
             }
         }
