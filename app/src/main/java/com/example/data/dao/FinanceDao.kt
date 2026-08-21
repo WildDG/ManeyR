@@ -3,6 +3,7 @@ package com.example.data.dao
 import androidx.room.*
 import com.example.data.model.Account
 import com.example.data.model.Category
+import com.example.data.model.SubCategory
 import com.example.data.model.SavingTarget
 import com.example.data.model.Transaction
 import com.example.data.model.RecurringTransaction
@@ -48,6 +49,24 @@ interface CategoryDao {
 
     @Query("DELETE FROM categories")
     suspend fun deleteAllCategories()
+}
+
+@Dao
+interface SubCategoryDao {
+    @Query("SELECT * FROM subcategories ORDER BY orderIndex ASC")
+    fun getAllSubCategories(): Flow<List<SubCategory>>
+
+    @Query("SELECT * FROM subcategories WHERE categoryId = :categoryId ORDER BY orderIndex ASC")
+    fun getSubCategoriesByCategoryId(categoryId: String): Flow<List<SubCategory>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSubCategory(subCategory: SubCategory)
+
+    @Update
+    suspend fun updateSubCategory(subCategory: SubCategory)
+
+    @Delete
+    suspend fun deleteSubCategory(subCategory: SubCategory)
 }
 
 @Dao

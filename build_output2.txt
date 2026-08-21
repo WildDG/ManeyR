@@ -1,0 +1,30 @@
+Reusing configuration cache.
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:generateDebugBuildConfig FROM-CACHE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:processDebugNavigationResources FROM-CACHE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:generateDebugRFile UP-TO-DATE
+> Task :app:kspDebugKotlin
+> Task :app:compileDebugKotlin
+w: file:///app/applet/app/src/main/java/com/example/data/db/AppDatabase.kt:212:22 'fun fallbackToDestructiveMigration(): RoomDatabase.Builder<AppDatabase>' is deprecated. Replace by overloaded version with parameter to indicate if all tables should be dropped or not.
+w: file:///app/applet/app/src/main/java/com/example/ui/components/CustomBarChart.kt:33:20 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///app/applet/app/src/main/java/com/example/ui/components/CustomPieChart.kt:44:20 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///app/applet/app/src/main/java/com/example/ui/screens/MainScreen.kt:197:49 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+w: file:///app/applet/app/src/main/java/com/example/ui/screens/MainScreen.kt:1682:29 'fun CircularProgressIndicator(progress: Float, modifier: Modifier = ..., color: Color = ..., strokeWidth: Dp = ..., trackColor: Color = ..., strokeCap: StrokeCap = ...): Unit' is deprecated. Use the overload that takes `progress` as a lambda.
+w: file:///app/applet/app/src/main/java/com/example/ui/screens/MainScreen.kt:1854:83 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///app/applet/app/src/main/java/com/example/ui/screens/MainScreen.kt:2157:57 'val Icons.Filled.ReceiptLong: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ReceiptLong.
+w: file:///app/applet/app/src/main/java/com/example/ui/screens/MainScreen.kt:3533:33 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///app/applet/app/src/main/java/com/example/ui/screens/MainScreen.kt:6633:67 'val Icons.Filled.CompareArrows: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.CompareArrows.
+w: file:///app/applet/app/src/main/java/com/example/ui/util/FormatUtils.kt:10:24 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///app/applet/app/src/main/java/com/example/ui/util/FormatUtils.kt:19:58 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///app/applet/app/src/main/java/com/example/ui/util/FormatUtils.kt:24:55 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///app/applet/app/src/main/java/com/example/ui/util/IconsMap.kt:18:43 'val Icons.Filled.TrendingUp: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.TrendingUp.
+w: file:///app/applet/app/src/main/java/com/example/ui/util/IconsMap.kt:49:41 'val Icons.Filled.MenuBook: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.MenuBook.
+w: file:///app/applet/app/src/main/java/com/example/ui/viewmodel/TransactionViewModel.kt:484:57 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+
+BUILD SUCCESSFUL in 54s
+8 actionable tasks: 2 executed, 2 from cache, 4 up-to-date
+Configuration cache entry reused.

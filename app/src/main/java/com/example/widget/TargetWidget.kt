@@ -48,7 +48,7 @@ class TargetWidget : GlanceAppWidget() {
                 ) {
                     if (savingTargets.isNotEmpty()) {
                         val firstTarget = savingTargets.first()
-                        val progress = if (firstTarget.targetAmount > 0) (firstTarget.currentAmount / firstTarget.targetAmount) * 100 else 0.0
+                        val progress = if (firstTarget.targetAmount > 0) (firstTarget.currentAmount / firstTarget.targetAmount) * 100 else 0L
                         Text(
                             text = "Target Impian: ${firstTarget.name}",
                             style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color(0xFF4A4458)))

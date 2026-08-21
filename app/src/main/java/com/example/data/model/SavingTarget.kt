@@ -7,8 +7,17 @@ import androidx.room.PrimaryKey
 data class SavingTarget(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val name: String,
-    val targetAmount: Double,
-    val currentAmount: Double = 0.0,
-    val sourceAccountId: String, // Linked wallet/account
-    val colorHex: String = "#FF9800"
+    val targetAmount: Long,
+    val currentAmount: Long = 0L,
+    val sourceAccountId: String, // Linked wallet/account (could be null for manual?)
+    val colorHex: String = "#FF9800",
+    val trackingMode: String = "MANUAL", // "DEDICATED", "AUTOMATIC", "MANUAL"
+    val priority: Int = 0,
+    val startDate: Long = System.currentTimeMillis(),
+    val targetDate: Long? = null,
+    val iconName: String = "Savings",
+    val note: String = "",
+    val isActive: Boolean = true,
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis()
 )

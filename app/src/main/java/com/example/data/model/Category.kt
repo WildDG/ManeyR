@@ -10,5 +10,9 @@ data class Category(
     val iconName: String, // e.g. "Fastfood"
     val type: String, // "PEMASUKAN" or "PENGELUARAN" or "TRANSFER"
     val colorHex: String,
-    val budgetLimit: Double = 0.0
+    val budgetLimit: Long = 0L,
+    val parentId: String? = null,
+    val displayOrder: Int = 0,
+    val isArchived: Boolean = false,
+    val isSystem: Boolean = false
 )

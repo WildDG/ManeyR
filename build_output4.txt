@@ -1,0 +1,69 @@
+Calculating task graph as no cached configuration is available for tasks: compileDebugKotlin
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:generateDebugBuildConfig
+> Task :app:processDebugNavigationResources
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:generateDebugRFile UP-TO-DATE
+Exception in thread "AWT-EventQueue-0" java.lang.NullPointerException: Cannot invoke "ksp.com.intellij.openapi.application.Application.getService(java.lang.Class)" because the return value of "ksp.com.intellij.openapi.application.ApplicationManager.getApplication()" is null
+	at ksp.com.intellij.openapi.fileEditor.FileDocumentManager.getInstance(FileDocumentManager.java:35)
+	at ksp.com.intellij.openapi.fileTypes.BinaryFileTypeDecompilers.lambda$notifyDecompilerSetChange$1(BinaryFileTypeDecompilers.java:29)
+	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:773)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:720)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:714)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:400)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:87)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:742)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+> Task :app:kspDebugKotlin
+
+> Task :app:compileDebugKotlin FAILED
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:68:39 Argument type mismatch: actual type is 'Long', but 'String' was expected.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:68:43 Argument type mismatch: actual type is 'String', but 'Long' was expected.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:68:61 Argument type mismatch: actual type is 'String', but 'Long' was expected.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:68:61 No value passed for parameter 'iconName'.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:69:39 Argument type mismatch: actual type is 'Long', but 'String' was expected.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:69:43 Argument type mismatch: actual type is 'String', but 'Long' was expected.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:69:67 Argument type mismatch: actual type is 'String', but 'Long' was expected.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:69:67 No value passed for parameter 'iconName'.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:70:50 Argument type mismatch: actual type is 'Long', but 'String' was expected.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:70:54 Argument type mismatch: actual type is 'String', but 'Long' was expected.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:70:66 Argument type mismatch: actual type is 'String', but 'Long' was expected.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:70:66 No value passed for parameter 'iconName'.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:312:35 Argument type mismatch: actual type is 'Long', but 'String' was expected.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:312:39 Argument type mismatch: actual type is 'String', but 'Long' was expected.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:312:57 Argument type mismatch: actual type is 'String', but 'Long' was expected.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:312:57 No value passed for parameter 'iconName'.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:313:35 Argument type mismatch: actual type is 'Long', but 'String' was expected.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:313:39 Argument type mismatch: actual type is 'String', but 'Long' was expected.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:313:63 Argument type mismatch: actual type is 'String', but 'Long' was expected.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:313:63 No value passed for parameter 'iconName'.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:314:46 Argument type mismatch: actual type is 'Long', but 'String' was expected.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:314:50 Argument type mismatch: actual type is 'String', but 'Long' was expected.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:314:62 Argument type mismatch: actual type is 'String', but 'Long' was expected.
+e: file:///app/applet/app/src/main/java/com/example/data/repository/FinanceRepository.kt:314:62 No value passed for parameter 'iconName'.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 34s
+8 actionable tasks: 4 executed, 4 up-to-date
+Configuration cache entry stored.

@@ -28,7 +28,7 @@ fun CustomBarChart(
     shares: List<CategoryShare>,
     modifier: Modifier = Modifier,
     statType: String = "PENGELUARAN",
-    globalBudgetLimit: Double = 0.0
+    globalBudgetLimit: Long = 0L
 ) {
     val localeID = Locale("id", "ID")
     val rupiahFormatter = NumberFormat.getCurrencyInstance(localeID).apply {
@@ -127,7 +127,7 @@ fun CustomBarChart(
                     Color(android.graphics.Color.parseColor(share.category.colorHex))
                 }.getOrDefault(MaterialTheme.colorScheme.primary)
 
-                val fraction = (share.amount / maxShareAmount).toFloat()
+                val fraction = (share.amount.toFloat() / maxShareAmount.toFloat())
                 val animatedFraction = fraction * animationProgress.value
 
                 Column(modifier = Modifier.fillMaxWidth()) {
@@ -167,12 +167,28 @@ fun CustomBarChart(
                         )
                     }
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = rupiahFormatter.format(share.amount),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.align(Alignment.End)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (share.category.budgetLimit > 0) {
+                            val isOverBudget = share.amount > share.category.budgetLimit
+                            val budgetMsg = if (isOverBudget) "Overbudget!" else "Batas: ${rupiahFormatter.format(share.category.budgetLimit)}"
+                            Text(
+                                text = budgetMsg,
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isOverBudget) FontWeight.Bold else FontWeight.Normal),
+                                color = if (isOverBudget) Color.Red else Color.Gray
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                        Text(
+                            text = rupiahFormatter.format(share.amount),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }

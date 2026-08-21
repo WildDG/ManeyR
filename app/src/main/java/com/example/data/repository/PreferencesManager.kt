@@ -20,7 +20,7 @@ class PreferencesManager(context: Context) {
     val targetAppColorHex: StateFlow<String> = _targetAppColorHex.asStateFlow()
 
     private val _globalBudgetLimit = MutableStateFlow(getGlobalBudgetLimitFromPrefs())
-    val globalBudgetLimit: StateFlow<Double> = _globalBudgetLimit.asStateFlow()
+    val globalBudgetLimit: StateFlow<Long> = _globalBudgetLimit.asStateFlow()
 
     fun setThemeMode(mode: ThemeMode) {
         prefs.edit().putString("THEME_MODE", mode.name).apply()
@@ -32,8 +32,8 @@ class PreferencesManager(context: Context) {
         _targetAppColorHex.value = hex
     }
 
-    fun setGlobalBudgetLimit(limit: Double) {
-        prefs.edit().putFloat("GLOBAL_BUDGET_LIMIT", limit.toFloat()).apply()
+    fun setGlobalBudgetLimit(limit: Long) {
+        prefs.edit().putLong("GLOBAL_BUDGET_LIMIT", limit).apply()
         _globalBudgetLimit.value = limit
     }
 
@@ -41,8 +41,8 @@ class PreferencesManager(context: Context) {
         return prefs.getString("APP_COLOR_HEX", "") ?: ""
     }
 
-    private fun getGlobalBudgetLimitFromPrefs(): Double {
-        return prefs.getFloat("GLOBAL_BUDGET_LIMIT", 0f).toDouble()
+    private fun getGlobalBudgetLimitFromPrefs(): Long {
+        return prefs.getLong("GLOBAL_BUDGET_LIMIT", 0L)
     }
 
     private fun getThemeModeFromPrefs(): ThemeMode {

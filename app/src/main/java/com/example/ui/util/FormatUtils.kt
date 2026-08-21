@@ -6,7 +6,7 @@ import java.util.Date
 import java.util.Locale
 
 object FormatUtils {
-    fun formatRupiah(amount: Double): String {
+    fun formatRupiah(amount: Long): String {
         val localeID = Locale("id", "ID")
         val formatter = NumberFormat.getCurrencyInstance(localeID).apply {
             minimumFractionDigits = 2

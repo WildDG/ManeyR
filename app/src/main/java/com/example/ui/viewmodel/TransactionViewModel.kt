@@ -5,8 +5,12 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.data.model.Account
 import com.example.data.model.Category
+import com.example.data.model.SubCategory
+import com.example.data.model.Installment
+import com.example.data.model.SavingAllocation
 import com.example.data.model.SavingTarget
 import com.example.data.model.Transaction
+import com.example.data.model.Tag
 import com.example.data.model.RecurringTransaction
 import com.example.data.repository.FinanceRepository
 import com.example.data.repository.PreferencesManager
@@ -44,18 +48,27 @@ class TransactionViewModel(
     val categories: StateFlow<List<Category>> = repository.categories
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val subCategories: StateFlow<List<SubCategory>> = repository.subCategories
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val transactions: StateFlow<List<Transaction>> = repository.transactions
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val installments: StateFlow<List<Installment>> = repository.installments.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val savingTargets: StateFlow<List<SavingTarget>> = repository.savingTargets
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val tags: StateFlow<List<Tag>> = repository.tags
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    suspend fun getTagIdsForTransactionSync(transactionId: Int): List<String> = repository.getTagIdsForTransactionSync(transactionId)
 
     val savings: StateFlow<List<SavingTarget>> = repository.savingTargets
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val themeMode: StateFlow<ThemeMode> = preferencesManager.themeMode
     val targetAppColorHex: StateFlow<String> = preferencesManager.targetAppColorHex
-    val globalBudgetLimit: StateFlow<Double> = preferencesManager.globalBudgetLimit
+    val globalBudgetLimit: StateFlow<Long> = preferencesManager.globalBudgetLimit
 
     // Keep backwards compatibility for MainScreen if it uses isDarkModeEnabled still
     val isDarkModeEnabled: StateFlow<Boolean?> = themeMode.map { mode ->
@@ -74,7 +87,7 @@ class TransactionViewModel(
         preferencesManager.setAppColorHex(hex)
     }
 
-    fun setGlobalBudgetLimit(limit: Double) {
+    fun setGlobalBudgetLimit(limit: Long) {
         preferencesManager.setGlobalBudgetLimit(limit)
     }
 
@@ -99,35 +112,47 @@ class TransactionViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Summary calculations
-    val totalBalance: StateFlow<Double> = repository.accounts
+    val totalBalance: StateFlow<Long> = repository.accounts
         .map { list -> list.sumOf { it.balance } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
 
-    val monthlyIncome: StateFlow<Double> = filteredTransactions
+    val monthlyIncome: StateFlow<Long> = filteredTransactions
         .map { list -> list.filter { it.type == "PEMASUKAN" }.sumOf { it.amount } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
 
-    val monthlyExpense: StateFlow<Double> = filteredTransactions
+    val monthlyExpense: StateFlow<Long> = filteredTransactions
         .map { list -> list.filter { it.type == "PENGELUARAN" }.sumOf { it.amount } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
 
     // Expense items broken down by category for chart
     val categoryBreakdown: StateFlow<List<CategoryShare>> = combine(
         filteredTransactions,
-        categories
-    ) { filteredTx, cats ->
+        categories,
+        subCategories
+    ) { filteredTx, cats, subCats ->
         val expenseTx = filteredTx.filter { it.type == "PENGELUARAN" }
         val totalExp = expenseTx.sumOf { it.amount }
-        if (totalExp == 0.0) emptyList()
+        if (totalExp == 0L) emptyList()
         else {
             val grouped = expenseTx.groupBy { it.categoryId }
             grouped.map { (catId, txs) ->
                 val cat = cats.find { it.id == catId } ?: Category(catId, catId, "QuestionMark", "PENGELUARAN", "#9E9E9E")
                 val amount = txs.sumOf { it.amount }
+                
+                val subCatGrouped = txs.groupBy { it.subCategoryId }
+                val subCatShares = subCatGrouped.map { (subCatId, subTxs) ->
+                    val subCat = subCats.find { it.id == subCatId }
+                    SubCategoryShare(
+                        subCategory = subCat,
+                        amount = subTxs.sumOf { it.amount }
+                    )
+                }.sortedByDescending { it.amount }
+                
                 CategoryShare(
                     category = cat,
                     amount = amount,
-                    percentage = (amount / totalExp) * 100.0
+                    percentage = (amount.toDouble() / totalExp.toDouble()) * 100.0,
+                    subCategoryShares = subCatShares
                 )
             }.sortedByDescending { it.amount }
         }
@@ -147,13 +172,15 @@ class TransactionViewModel(
     }
 
     fun addTransaction(
-        amount: Double,
+        amount: Long,
         type: String,
         categoryId: String,
+        subCategoryId: String? = null,
         accountId: String,
         destAccountId: String? = null,
         date: Long = System.currentTimeMillis(),
-        notes: String = ""
+        notes: String = "",
+        tagIds: List<String> = emptyList()
     ) {
         viewModelScope.launch {
             try {
@@ -161,19 +188,20 @@ class TransactionViewModel(
                     amount = amount,
                     type = type,
                     categoryId = categoryId,
+                    subCategoryId = subCategoryId,
                     accountId = accountId,
                     destAccountId = destAccountId,
                     date = date,
                     notes = notes
                 )
-                repository.addTransaction(transaction)
+                repository.addTransaction(transaction, tagIds)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
     }
 
-    fun quickAddTransaction(amount: Double, type: String) {
+    fun quickAddTransaction(amount: Long, type: String) {
         viewModelScope.launch {
             try {
                 val existingAccounts = repository.accounts.first()
@@ -182,7 +210,7 @@ class TransactionViewModel(
                     val fallbackAcc = Account(
                         id = fallbackAccStr,
                         name = "BCA",
-                        balance = 0.0,
+                        balance = 0L,
                         iconName = "AccountBalance",
                         colorHex = "#2196F3"
                     )
@@ -214,7 +242,7 @@ class TransactionViewModel(
         }
     }
 
-    fun addAdjustAssetTransaction(srcId: String, amt: Double, isPemasukan: Boolean) {
+    fun addAdjustAssetTransaction(srcId: String, amt: Long, isPemasukan: Boolean) {
         viewModelScope.launch {
             try {
                 val type = if (isPemasukan) "PEMASUKAN" else "PENGELUARAN"
@@ -234,7 +262,8 @@ class TransactionViewModel(
                         iconName = "Build",
                         type = type,
                         colorHex = "#607D8B",
-                        budgetLimit = 0.0
+                        budgetLimit = 0L,
+                        parentId = null
                     )
                     repository.addCategory(newCategory)
                     id
@@ -256,19 +285,20 @@ class TransactionViewModel(
         }
     }
 
-    fun updateTransaction(oldTx: Transaction, amount: Double, type: String, categoryId: String, accountId: String, destAccountId: String?, date: Long, notes: String) {
+    fun updateTransaction(oldTx: Transaction, amount: Long, type: String, categoryId: String, subCategoryId: String?, accountId: String, destAccountId: String?, date: Long, notes: String, tagIds: List<String> = emptyList()) {
         viewModelScope.launch {
             try {
                 val updatedTx = oldTx.copy(
                     amount = amount,
                     type = type,
                     categoryId = categoryId,
+                    subCategoryId = subCategoryId,
                     accountId = accountId,
                     destAccountId = destAccountId,
                     date = date,
                     notes = notes
                 )
-                repository.updateTransaction(oldTx, updatedTx)
+                repository.updateTransaction(oldTx, updatedTx, tagIds)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -285,7 +315,7 @@ class TransactionViewModel(
         }
     }
 
-    fun addCustomAccount(name: String, initialBalance: Double) {
+    fun addCustomAccount(name: String, initialBalance: Long) {
         viewModelScope.launch {
             try {
                 val id = name.lowercase().replace(" ", "_") + "_${System.currentTimeMillis() % 1000}"
@@ -313,7 +343,7 @@ class TransactionViewModel(
         }
     }
 
-    fun addCustomCategory(name: String, type: String, iconName: String, budgetLimit: Double = 0.0) {
+    fun addCustomCategory(name: String, type: String, iconName: String, budgetLimit: Long = 0L, parentId: String? = null) {
         viewModelScope.launch {
             try {
                 val id = name.lowercase().replace(" ", "_") + "_${System.currentTimeMillis() % 1000}"
@@ -323,7 +353,8 @@ class TransactionViewModel(
                     iconName = iconName,
                     type = type,
                     colorHex = getRandomColorHex(),
-                    budgetLimit = budgetLimit
+                    budgetLimit = budgetLimit,
+                    parentId = parentId
                 )
                 repository.addCategory(newCategory)
             } catch (e: Exception) {
@@ -360,7 +391,7 @@ class TransactionViewModel(
                             iconName = "SwapHoriz",
                             type = type,
                             colorHex = "#9E9E9E",
-                            budgetLimit = 0.0
+                            budgetLimit = 0L
                         )
                         repository.addCategory(editCat)
                     }
@@ -387,6 +418,42 @@ class TransactionViewModel(
         viewModelScope.launch {
             try {
                 repository.addCategory(category)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun addCustomSubCategory(name: String, categoryId: String) {
+        viewModelScope.launch {
+            try {
+                val subCat = SubCategory(
+                    id = UUID.randomUUID().toString(),
+                    categoryId = categoryId,
+                    name = name,
+                    orderIndex = 0
+                )
+                repository.addSubCategory(subCat)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun deleteCustomSubCategory(subCategory: SubCategory) {
+        viewModelScope.launch {
+            try {
+                repository.deleteSubCategory(subCategory)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun updateCustomSubCategory(subCategory: SubCategory) {
+        viewModelScope.launch {
+            try {
+                repository.addSubCategory(subCategory)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -426,13 +493,13 @@ class TransactionViewModel(
         return colors.random()
     }
 
-    fun addSavingTarget(name: String, targetAmount: Double, sourceAccountId: String) {
+    fun addSavingTarget(name: String, targetAmount: Long, sourceAccountId: String) {
         viewModelScope.launch {
             try {
                 val target = SavingTarget(
                     name = name,
                     targetAmount = targetAmount,
-                    currentAmount = 0.0,
+                    currentAmount = 0L,
                     sourceAccountId = sourceAccountId,
                     colorHex = getRandomColorHex()
                 )
@@ -453,7 +520,7 @@ class TransactionViewModel(
         }
     }
 
-    fun saveToTarget(targetId: Int, sourceAccountId: String, amount: Double) {
+    fun saveToTarget(targetId: Int, sourceAccountId: String, amount: Long) {
         viewModelScope.launch {
             try {
                 repository.saveToTarget(targetId, sourceAccountId, amount)
@@ -465,7 +532,7 @@ class TransactionViewModel(
 
     fun addRecurringTransaction(
         name: String,
-        amount: Double,
+        amount: Long,
         type: String,
         categoryId: String,
         accountId: String,
@@ -585,9 +652,9 @@ class TransactionViewModel(
                     val typeStr = parts[6]
                     val rawAmount2 = parts.getOrNull(8) ?: ""
                     
-                    val amount = rawAmount2.replace("\"", "").replace(",", "").toDoubleOrNull()
-                        ?: rawAmount1.replace("\"", "").replace(",", "").toDoubleOrNull()
-                        ?: 0.0
+                    val amount = rawAmount2.replace("\"", "").replace(",", "").toLongOrNull()
+                        ?: rawAmount1.replace("\"", "").replace(",", "").toLongOrNull()
+                        ?: 0L
                     
                     val cleanDate = rawDate.replace("\uFEFF", "").replace("\"", "").trim()
                     
@@ -732,7 +799,7 @@ class TransactionViewModel(
                         acct = Account(
                             id = acctId,
                             name = accountName,
-                            balance = 0.0,
+                            balance = 0L,
                             iconName = if (acctId == "bca" || acctId == "bri") "AccountBalance" else "AccountBalanceWallet",
                             colorHex = colorHex
                         )
@@ -749,7 +816,7 @@ class TransactionViewModel(
                             destAcct = Account(
                                 id = destAcctIdRaw,
                                 name = catName,
-                                balance = 0.0,
+                                balance = 0L,
                                 iconName = "AccountBalanceWallet",
                                 colorHex = listOf("#E91E63", "#FF9800", "#FFC107", "#00BCD4", "#4CAF50").shuffled().first()
                             )
@@ -861,12 +928,82 @@ class TransactionViewModel(
             }
         }
     }
+
+    fun addCustomTag(name: String, colorHex: String) {
+        viewModelScope.launch {
+            try {
+                val tagsList = repository.tags.first()
+                val orderIndex = tagsList.maxOfOrNull { it.orderIndex }?.plus(1) ?: 0
+                val tag = Tag(
+                    id = java.util.UUID.randomUUID().toString(),
+                    name = name,
+                    colorHex = colorHex,
+                    orderIndex = orderIndex
+                )
+                repository.addTag(tag)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun updateCustomTag(tag: Tag, newName: String, newColorHex: String) {
+        viewModelScope.launch {
+            try {
+                repository.updateTag(tag.copy(name = newName, colorHex = newColorHex))
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun deleteCustomTag(tag: Tag) {
+        viewModelScope.launch {
+            try {
+                repository.deleteTag(tag)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun addInstallment(installment: Installment) {
+        viewModelScope.launch {
+            repository.addInstallment(installment)
+        }
+    }
+    
+    fun updateInstallment(installment: Installment) {
+        viewModelScope.launch {
+            repository.updateInstallment(installment)
+        }
+    }
+    
+    fun deleteInstallment(installment: Installment) {
+        viewModelScope.launch {
+            repository.deleteInstallment(installment)
+        }
+    }
+    
+    fun payInstallment(installmentId: Int, accountId: String, amount: Long) {
+        viewModelScope.launch {
+            repository.payInstallment(installmentId, accountId, amount)
+        }
+    }
 }
+
+
+
+data class SubCategoryShare(
+    val subCategory: SubCategory?, // null means "No Sub Category"
+    val amount: Long
+)
 
 data class CategoryShare(
     val category: Category,
-    val amount: Double,
-    val percentage: Double
+    val amount: Long,
+    val percentage: Double,
+    val subCategoryShares: List<SubCategoryShare> = emptyList()
 )
 
 class ViewModelFactory(
@@ -880,4 +1017,7 @@ class ViewModelFactory(
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
+
+
+
 }

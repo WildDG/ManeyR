@@ -5,11 +5,19 @@ import com.example.data.dao.CategoryDao
 import com.example.data.dao.TransactionDao
 import com.example.data.dao.SavingTargetDao
 import com.example.data.dao.RecurringTransactionDao
+import com.example.data.dao.SubCategoryDao
+import com.example.data.dao.TagDao
+import com.example.data.dao.TransactionTagDao
+import com.example.data.model.Installment
+import com.example.data.dao.InstallmentDao
 import com.example.data.model.Account
 import com.example.data.model.Category
 import com.example.data.model.SavingTarget
 import com.example.data.model.Transaction
 import com.example.data.model.RecurringTransaction
+import com.example.data.model.SubCategory
+import com.example.data.model.Tag
+import com.example.data.model.TransactionTag
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import java.util.Calendar
@@ -17,15 +25,25 @@ import java.util.Calendar
 class FinanceRepository(
     private val accountDao: AccountDao,
     private val categoryDao: CategoryDao,
+    private val subCategoryDao: SubCategoryDao,
     private val transactionDao: TransactionDao,
     private val savingTargetDao: SavingTargetDao,
-    private val recurringTransactionDao: RecurringTransactionDao
+    private val recurringTransactionDao: RecurringTransactionDao,
+    private val tagDao: TagDao,
+    private val transactionTagDao: TransactionTagDao,
+    private val installmentDao: InstallmentDao
 ) {
     val accounts: Flow<List<Account>> = accountDao.getAllAccounts()
     val categories: Flow<List<Category>> = categoryDao.getAllCategories()
+    val subCategories: Flow<List<SubCategory>> = subCategoryDao.getAllSubCategories()
     val transactions: Flow<List<Transaction>> = transactionDao.getAllTransactions()
     val savingTargets: Flow<List<SavingTarget>> = savingTargetDao.getAllSavingTargets()
     val recurringTransactions: Flow<List<RecurringTransaction>> = recurringTransactionDao.getAllRecurringTransactions()
+    val installments: Flow<List<Installment>> = installmentDao.getAllInstallments()
+    val tags: Flow<List<Tag>> = tagDao.getAllTags()
+    suspend fun getTagIdsForTransactionSync(txId: Int): List<String> = transactionTagDao.getTagIdsForTransactionSync(txId)
+
+    fun getTagIdsForTransaction(transactionId: Int): Flow<List<String>> = transactionTagDao.getTagIdsForTransaction(transactionId)
 
     suspend fun initializeDefaults() {
         // Seed default categories if empty
@@ -51,15 +69,15 @@ class FinanceRepository(
         val currentAccounts = accountDao.getAllAccounts().first()
         if (currentAccounts.isEmpty()) {
             val defaultAccounts = listOf(
-                Account("bca", "BCA", 0.0, "AccountBalance", "#1976D2"),
-                Account("ovo", "OVO", 0.0, "AccountBalanceWallet", "#673AB7"),
-                Account("tunai", "Tunai Dompet", 0.0, "Payments", "#4CAF50")
+                Account("bca", "BCA", 0L, "AccountBalance", "#1976D2"),
+                Account("ovo", "OVO", 0L, "AccountBalanceWallet", "#673AB7"),
+                Account("tunai", "Tunai Dompet", 0L, "Payments", "#4CAF50")
             )
             defaultAccounts.forEach { accountDao.insertAccount(it) }
         }
     }
 
-    suspend fun updateTransaction(oldTransaction: Transaction, newTransaction: Transaction) {
+    suspend fun updateTransaction(oldTransaction: Transaction, newTransaction: Transaction, tagIds: List<String> = emptyList()) {
         // Reverse old balance
         when (oldTransaction.type) {
             "PEMASUKAN" -> {
@@ -86,6 +104,11 @@ class FinanceRepository(
 
         // Apply new transaction
         transactionDao.updateTransaction(newTransaction)
+        transactionTagDao.deleteTagsForTransaction(newTransaction.id)
+        if (tagIds.isNotEmpty()) {
+            val txTags = tagIds.map { TransactionTag(newTransaction.id, it) }
+            transactionTagDao.insertTransactionTags(txTags)
+        }
 
         // Adjust new balance
         when (newTransaction.type) {
@@ -112,8 +135,12 @@ class FinanceRepository(
         }
     }
 
-    suspend fun addTransaction(transaction: Transaction) {
-        transactionDao.insertTransaction(transaction)
+    suspend fun addTransaction(transaction: Transaction, tagIds: List<String> = emptyList()) {
+        val id = transactionDao.insertTransaction(transaction)
+        if (tagIds.isNotEmpty()) {
+            val txTags = tagIds.map { TransactionTag(id.toInt(), it) }
+            transactionTagDao.insertTransactionTags(txTags)
+        }
 
         // Adjust balance
         when (transaction.type) {
@@ -162,7 +189,7 @@ class FinanceRepository(
                     val targetName = transaction.notes.substringAfter("Tabungan: ")
                     val targets = savingTargetDao.getAllSavingTargets().first()
                     targets.find { it.name == targetName }?.let { target ->
-                        savingTargetDao.insertSavingTarget(target.copy(currentAmount = (target.currentAmount - transaction.amount).coerceAtLeast(0.0)))
+                        savingTargetDao.insertSavingTarget(target.copy(currentAmount = (target.currentAmount - transaction.amount).coerceAtLeast(0L)))
                     }
                 }
             }
@@ -189,12 +216,20 @@ class FinanceRepository(
         categoryDao.insertCategory(category)
     }
 
+    suspend fun addSubCategory(subCategory: SubCategory) {
+        subCategoryDao.insertSubCategory(subCategory)
+    }
+
     suspend fun deleteAccount(account: Account) {
         accountDao.deleteAccount(account)
     }
 
     suspend fun deleteCategory(category: Category) {
         categoryDao.deleteCategory(category)
+    }
+
+    suspend fun deleteSubCategory(subCategory: SubCategory) {
+        subCategoryDao.deleteSubCategory(subCategory)
     }
 
     suspend fun addSavingTarget(savingTarget: SavingTarget) {
@@ -205,7 +240,7 @@ class FinanceRepository(
         savingTargetDao.deleteSavingTarget(savingTarget)
     }
 
-    suspend fun saveToTarget(targetId: Int, sourceAccountId: String, amount: Double) {
+    suspend fun saveToTarget(targetId: Int, sourceAccountId: String, amount: Long) {
         val target = savingTargetDao.getSavingTargetById(targetId) ?: return
         val sourceAccount = accountDao.getAccountById(sourceAccountId) ?: return
 
@@ -278,9 +313,9 @@ class FinanceRepository(
     suspend fun restoreDefaultAccounts() {
         val currentAccounts = accountDao.getAllAccounts().first()
         val defaultAccounts = listOf(
-            Account("bca", "BCA", 0.0, "AccountBalance", "#1976D2"),
-            Account("ovo", "OVO", 0.0, "AccountBalanceWallet", "#673AB7"),
-            Account("tunai", "Tunai Dompet", 0.0, "Payments", "#4CAF50")
+            Account("bca", "BCA", 0L, "AccountBalance", "#1976D2"),
+            Account("ovo", "OVO", 0L, "AccountBalanceWallet", "#673AB7"),
+            Account("tunai", "Tunai Dompet", 0L, "Payments", "#4CAF50")
         )
         for (da in defaultAccounts) {
             if (currentAccounts.none { it.id == da.id }) {
@@ -296,5 +331,115 @@ class FinanceRepository(
         categoryDao.deleteAllCategories()
         recurringTransactionDao.deleteAllRecurringTransactions()
         initializeDefaults()
+    }
+
+
+    suspend fun addInstallment(installment: Installment) {
+        installmentDao.insertInstallment(installment)
+        
+        // Find category to know if it's income or expense
+        val category = categoryDao.getAllCategories().first().find { it.id == installment.categoryId }
+        val type = category?.type ?: "PENGELUARAN"
+        
+        // Deduct/Add from account for the initial creation
+        val account = accountDao.getAccountById(installment.paymentAccountId) ?: return
+        
+        if (type == "PEMASUKAN") {
+            // Piutang: kita meminjamkan uang, saldo kita berkurang
+            accountDao.insertAccount(account.copy(balance = account.balance - installment.totalAmount))
+            
+            // Catat sebagai pengeluaran awal (karena uang keluar dari dompet)
+            val transaction = Transaction(
+                amount = installment.totalAmount,
+                type = "PENGELUARAN",
+                categoryId = installment.categoryId,
+                subCategoryId = installment.subCategoryId,
+                accountId = installment.paymentAccountId,
+                notes = "Pemberian Piutang: ${installment.name}",
+                date = System.currentTimeMillis()
+            )
+            transactionDao.insertTransaction(transaction)
+        } else {
+            // Hutang / Cicilan pinjaman: kita menerima uang, saldo bertambah
+            accountDao.insertAccount(account.copy(balance = account.balance + installment.totalAmount))
+            
+            // Catat sebagai pemasukan awal (karena uang masuk ke dompet)
+            val transaction = Transaction(
+                amount = installment.totalAmount,
+                type = "PEMASUKAN",
+                categoryId = installment.categoryId,
+                subCategoryId = installment.subCategoryId,
+                accountId = installment.paymentAccountId,
+                notes = "Penerimaan Pinjaman: ${installment.name}",
+                date = System.currentTimeMillis()
+            )
+            transactionDao.insertTransaction(transaction)
+        }
+    }
+    
+    suspend fun updateInstallment(installment: Installment) {
+        installmentDao.updateInstallment(installment)
+    }
+    
+    suspend fun deleteInstallment(installment: Installment) {
+        installmentDao.deleteInstallment(installment)
+    }
+    
+    suspend fun payInstallment(installmentId: Int, accountId: String, amount: Long) {
+        // Implement logic to pay installment
+        val installments = installmentDao.getAllInstallments().first()
+        val installment = installments.find { it.id == installmentId } ?: return
+        
+        // Deduct/Add from account
+        val account = accountDao.getAccountById(accountId) ?: return
+        
+        // Find category to know if it's income or expense
+        val category = categoryDao.getAllCategories().first().find { it.id == installment.categoryId }
+        val type = category?.type ?: "PENGELUARAN"
+        
+        if (type == "PEMASUKAN") {
+            accountDao.insertAccount(account.copy(balance = account.balance + amount))
+        } else {
+            accountDao.insertAccount(account.copy(balance = account.balance - amount))
+        }
+        
+        // Add transaction
+        val transaction = Transaction(
+            amount = amount,
+            type = type,
+            categoryId = installment.categoryId,
+            subCategoryId = installment.subCategoryId,
+            accountId = accountId,
+            notes = "Pembayaran: ${installment.name}",
+            date = System.currentTimeMillis()
+        )
+        transactionDao.insertTransaction(transaction)
+        
+        // Update installment
+        val updatedInstallment = installment.copy(
+            paidCount = installment.paidCount + 1,
+            remainingCount = (installment.remainingCount - 1).coerceAtLeast(0),
+            remainingAmount = (installment.remainingAmount - amount).coerceAtLeast(0L),
+            status = if (installment.remainingAmount - amount <= 0) "COMPLETED" else "ACTIVE",
+            nextDueDate = calculateNextDueDate(installment.nextDueDate) // simple +1 month
+        )
+        installmentDao.updateInstallment(updatedInstallment)
+    }
+    
+    private fun calculateNextDueDate(currentDueDate: Long): Long {
+        val cal = java.util.Calendar.getInstance()
+        cal.timeInMillis = currentDueDate
+        cal.add(java.util.Calendar.MONTH, 1)
+        return cal.timeInMillis
+    }
+
+    suspend fun addTag(tag: Tag) {
+        tagDao.insertTag(tag)
+    }
+    suspend fun updateTag(tag: Tag) {
+        tagDao.updateTag(tag)
+    }
+    suspend fun deleteTag(tag: Tag) {
+        tagDao.deleteTag(tag)
     }
 }

@@ -12,9 +12,13 @@ class FinanceApplication : Application() {
         FinanceRepository(
             database.accountDao(),
             database.categoryDao(),
+            database.subCategoryDao(),
             database.transactionDao(),
             database.savingTargetDao(),
-            database.recurringTransactionDao()
+            database.recurringTransactionDao(),
+            database.tagDao(),
+            database.transactionTagDao(),
+            database.installmentDao()
         )
     }
 }
